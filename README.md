@@ -36,8 +36,8 @@ npm run format
    npm install react-router-dom
    ```
 
-2. `src/main.jsx`에서 `BrowserRouter`로 애플리케이션을 감쌉니다.
-3. `src/App.jsx`에서 메뉴와 라우트를 정의합니다.
+2. `src/main.tsx`에서 `BrowserRouter`로 애플리케이션을 감쌉니다.
+3. `src/App.tsx`에서 메뉴와 라우트를 정의합니다.
 
    ```jsx
    import { Layout, Menu } from "antd";
