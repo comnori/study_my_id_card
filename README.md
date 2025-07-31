@@ -11,6 +11,21 @@ Currently, two official plugins are available:
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
+## Prettier 사용하기
+
+`prettier` 패키지를 이용해 코드 포매팅을 수행할 수 있습니다. 다음 명령으로 전체 소스를 포맷합니다.
+
+```bash
+npm run format
+```
+
+## VS Code 확장 추천
+
+프로젝트를 편리하게 개발하기 위해 다음 VS Code 확장 설치를 권장합니다.
+
+- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+- [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+
 ## React Router 사용하기
 
 `react-router-dom`을 이용해 페이지를 라우팅하고 메뉴를 구성할 수 있습니다. 기본 절차는 아래와 같습니다.
