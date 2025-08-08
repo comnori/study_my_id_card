@@ -138,6 +138,10 @@ import { Link, Route, Routes } from \"react-router-dom\";
 - [React Router 공식 문서](https://reactrouter.com/)
 - [Ant Design 공식 문서](https://ant.design/)
 
+## 📝 PR 변경 사항
+
+- GitHub Pages 배포를 위해 `vite.config.js`의 `base` 경로를 `/study_my_id_card/`로 설정했습니다.
+
 ## 🤝 기여 방법
 
 1. 이 저장소를 Fork합니다
