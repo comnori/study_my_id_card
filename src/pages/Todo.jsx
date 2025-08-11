@@ -1,18 +1,20 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  Table, 
   Button, 
-  Modal, 
   Form, 
   Input, 
-  Switch, 
-  Space, 
+  Checkbox, 
+  List, 
   message,
   Typography,
-  Card
+  Card,
+  Empty,
+  Spin,
+  Dropdown,
+  Collapse
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 
@@ -55,9 +57,8 @@ const deleteTodo = async (id) => {
 
 const Todo = () => {
   const queryClient = useQueryClient();
-  const [form] = Form.useForm();
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [editingTodo, setEditingTodo] = React.useState(null);
+  const [addForm] = Form.useForm();
+  const [newTodoValue, setNewTodoValue] = React.useState('');
 
   const { data: todos = [], isLoading, error } = useQuery({
     queryKey: ['todos'],
@@ -69,8 +70,8 @@ const Todo = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       message.success('할일이 추가되었습니다.');
-      setIsModalOpen(false);
-      form.resetFields();
+      setNewTodoValue('');
+      addForm.resetFields();
     },
     onError: () => {
       message.error('할일 추가에 실패했습니다.');
@@ -81,10 +82,6 @@ const Todo = () => {
     mutationFn: updateTodo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
-      message.success('할일이 수정되었습니다.');
-      setIsModalOpen(false);
-      setEditingTodo(null);
-      form.resetFields();
     },
     onError: () => {
       message.error('할일 수정에 실패했습니다.');
@@ -102,42 +99,14 @@ const Todo = () => {
     },
   });
 
-  const handleCreate = () => {
-    setEditingTodo(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (todo) => {
-    setEditingTodo(todo);
-    form.setFieldsValue({
-      title: todo.title,
-      completed: todo.completed,
+  const handleAddTodo = (values) => {
+    if (!values.title || !values.title.trim()) return;
+    
+    createMutation.mutate({
+      title: values.title.trim(),
+      completed: false,
+      userId: 1,
     });
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: '할일 삭제',
-      content: '정말로 이 할일을 삭제하시겠습니까?',
-      onOk: () => deleteMutation.mutate(id),
-    });
-  };
-
-  const handleSubmit = (values) => {
-    if (editingTodo) {
-      updateMutation.mutate({
-        id: editingTodo.id,
-        ...values,
-        userId: editingTodo.userId,
-      });
-    } else {
-      createMutation.mutate({
-        ...values,
-        userId: 1,
-      });
-    }
   };
 
   const handleToggleComplete = (todo) => {
@@ -147,59 +116,13 @@ const Todo = () => {
     });
   };
 
-  const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-    },
-    {
-      title: '할일',
-      dataIndex: 'title',
-      key: 'title',
-    },
-    {
-      title: '완료상태',
-      dataIndex: 'completed',
-      key: 'completed',
-      width: 120,
-      render: (completed, record) => (
-        <Switch
-          checked={completed}
-          onChange={() => handleToggleComplete(record)}
-          loading={updateMutation.isPending}
-        />
-      ),
-    },
-    {
-      title: '작업',
-      key: 'actions',
-      width: 150,
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          >
-            수정
-          </Button>
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
-            loading={deleteMutation.isPending}
-            size="small"
-          >
-            삭제
-          </Button>
-        </Space>
-      ),
-    },
-  ];
+  const handleDelete = (id) => {
+    deleteMutation.mutate(id);
+  };
+
+  // 완료된 할일과 미완료 할일 분리
+  const completedTodos = todos.filter(todo => todo.completed);
+  const incompleteTodos = todos.filter(todo => !todo.completed);
 
   if (error) {
     return (
@@ -212,86 +135,153 @@ const Todo = () => {
   }
 
   return (
-    <Card>
-      <div>
-        <Title level={2}>할일 관리</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreate}
-          loading={createMutation.isPending}
-        >
-          할일 추가
-        </Button>
-      </div>
+    <div>
+      {/* 헤더 */}
+      <Card>
+        <Title level={2}>할일</Title>
+        <Typography.Text type="secondary">
+          총 {todos.length}개 중 {completedTodos.length}개 완료
+        </Typography.Text>
+      </Card>
 
-      <Table
-        columns={columns}
-        dataSource={todos}
-        rowKey="id"
-        loading={isLoading}
-        pagination={{
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
-        }}
-      />
-
-      <Modal
-        title={editingTodo ? '할일 수정' : '할일 추가'}
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingTodo(null);
-          form.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="title"
-            label="할일"
-            rules={[{ required: true, message: '할일을 입력해주세요' }]}
-          >
-            <Input placeholder="할일을 입력하세요" />
-          </Form.Item>
-
-          <Form.Item
-            name="completed"
-            label="완료상태"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={createMutation.isPending || updateMutation.isPending}
-              >
-                {editingTodo ? '수정' : '추가'}
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setEditingTodo(null);
-                  form.resetFields();
-                }}
-              >
-                취소
-              </Button>
-            </Space>
+      {/* 할일 추가 */}
+      <Card>
+        <Form form={addForm} onFinish={handleAddTodo}>
+          <Form.Item name="title" rules={[{ required: true, message: '할일을 입력해주세요' }]}>
+            <Input.Search
+              placeholder="할일 추가"
+              enterButton={<PlusOutlined />}
+              size="large"
+              onSearch={(value) => handleAddTodo({ title: value })}
+              loading={createMutation.isPending}
+            />
           </Form.Item>
         </Form>
-      </Modal>
-    </Card>
+      </Card>
+
+      {/* 할일 목록 - Collapsible */}
+      <Collapse
+        defaultActiveKey={['incomplete']}
+        items={[
+          {
+            key: 'incomplete',
+            label: `미완료 (${incompleteTodos.length}개)`,
+            children: (
+              <>
+                {isLoading ? (
+                  <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                    <Spin size="large" />
+                  </div>
+                ) : incompleteTodos.length === 0 ? (
+                  <Empty 
+                    description="미완료 할일이 없습니다" 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                  />
+                ) : (
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    <List
+                      dataSource={incompleteTodos}
+                      renderItem={(todo) => (
+                        <List.Item
+                          actions={[
+                            <Dropdown
+                              menu={{
+                                items: [
+                                  {
+                                    key: 'delete',
+                                    label: '삭제',
+                                    danger: true,
+                                    icon: <DeleteOutlined />,
+                                    onClick: () => handleDelete(todo.id),
+                                  },
+                                ],
+                              }}
+                              trigger={['click']}
+                            >
+                              <Button type="text" icon={<MoreOutlined />} />
+                            </Dropdown>,
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <Checkbox
+                                checked={todo.completed}
+                                onChange={() => handleToggleComplete(todo)}
+                                disabled={updateMutation.isPending}
+                              />
+                            }
+                            title={
+                              <Typography.Text>
+                                {todo.title}
+                              </Typography.Text>
+                            }
+                            description={`ID: ${todo.id}`}
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </div>
+                )}
+              </>
+            ),
+          },
+          ...(completedTodos.length > 0 ? [{
+            key: 'completed',
+            label: `완료됨 (${completedTodos.length}개)`,
+            children: (
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <List
+                  dataSource={completedTodos}
+                  renderItem={(todo) => (
+                    <List.Item
+                      actions={[
+                        <Dropdown
+                          menu={{
+                            items: [
+                              {
+                                key: 'delete',
+                                label: '삭제',
+                                danger: true,
+                                icon: <DeleteOutlined />,
+                                onClick: () => handleDelete(todo.id),
+                              },
+                            ],
+                          }}
+                          trigger={['click']}
+                        >
+                          <Button type="text" icon={<MoreOutlined />} />
+                        </Dropdown>,
+                      ]}
+                    >
+                      <List.Item.Meta
+                        avatar={
+                          <Checkbox
+                            checked={todo.completed}
+                            onChange={() => handleToggleComplete(todo)}
+                            disabled={updateMutation.isPending}
+                          />
+                        }
+                        title={
+                          <Typography.Text
+                            style={{
+                              textDecoration: 'line-through',
+                              color: '#999',
+                            }}
+                          >
+                            {todo.title}
+                          </Typography.Text>
+                        }
+                        description={`ID: ${todo.id}`}
+                      />
+                    </List.Item>
+                  )}
+                />
+              </div>
+            ),
+          }] : []),
+        ]}
+      />
+    </div>
   );
 };
 
