@@ -1,17 +1,10 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  Button, 
   Form, 
-  Input, 
-  Checkbox, 
-  List, 
   message,
   Typography,
   Card,
-  Empty,
-  Spin,
-  Dropdown,
   Collapse,
   Row,
   Col,
@@ -20,93 +13,20 @@ import {
   Progress
 } from 'antd';
 import { 
-  PlusOutlined, 
-  MoreOutlined, 
-  DeleteOutlined,
   SmileOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   StarFilled,
   HeartFilled,
   FireFilled,
-  TrophyFilled,
-  RocketFilled
+  TrophyFilled
 } from '@ant-design/icons';
 
+import TodoInput from './Todo/TodoInput';
+import IncompleteTodos from './Todo/IncompleteTodos';
+import CompletedTodos from './Todo/CompletedTodos';
+import { cuteStyles } from './Todo/styles';
+
 const { Title, Text } = Typography;
-
-// 귀여운 스타일 정의
-const cuteStyles = {
-  container: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    minHeight: '100vh',
-    padding: '20px',
-    borderRadius: '20px'
-  },
-  card: {
-    borderRadius: '20px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-    border: 'none',
-    background: 'rgba(255, 255, 255, 0.95)',
-    backdropFilter: 'blur(10px)'
-  },
-  headerCard: {
-    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    borderRadius: '20px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-    border: 'none',
-    color: 'white'
-  },
-  addCard: {
-    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    borderRadius: '20px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-    border: 'none'
-  },
-  listItem: {
-    borderRadius: '15px',
-    marginBottom: '10px',
-    padding: '15px',
-    background: 'linear-gradient(135deg, #fff 0%, #f8f9fa 100%)',
-    transition: 'all 0.3s ease',
-    border: '2px solid transparent'
-  },
-  listItemHover: {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 5px 20px rgba(0, 0, 0, 0.1)',
-    border: '2px solid #f093fb'
-  },
-  checkbox: {
-    transform: 'scale(1.3)',
-    marginRight: '10px'
-  },
-  completedText: {
-    textDecoration: 'line-through',
-    color: '#b8b8b8',
-    opacity: 0.7
-  },
-  emoji: {
-    fontSize: '1.5em',
-    marginRight: '8px'
-  },
-  tag: {
-    borderRadius: '10px',
-    padding: '2px 10px',
-    fontSize: '12px'
-  }
-};
-
-// 랜덤 이모지 생성 함수
-const getRandomEmoji = () => {
-  const emojis = ['🎯', '🚀', '💡', '🌟', '🎨', '📚', '🎪', '🌈', '🦄', '🍀'];
-  return emojis[Math.floor(Math.random() * emojis.length)];
-};
-
-// 우선순위별 색상
-const getPriorityColor = (id) => {
-  const colors = ['magenta', 'purple', 'blue', 'cyan', 'green', 'lime', 'gold', 'orange'];
-  return colors[id % colors.length];
-};
 
 const fetchTodos = async () => {
   const response = await fetch('https://jsonplaceholder.typicode.com/todos');
@@ -148,7 +68,6 @@ const deleteTodo = async (id) => {
 const Todo = () => {
   const queryClient = useQueryClient();
   const [addForm] = Form.useForm();
-  const [newTodoValue, setNewTodoValue] = React.useState('');
 
   const { data: todos = [], isLoading, error } = useQuery({
     queryKey: ['todos'],
@@ -165,7 +84,6 @@ const Todo = () => {
           할일이 추가되었어요! 화이팅! 💪
         </span>
       );
-      setNewTodoValue('');
       addForm.resetFields();
     },
     onError: () => {
@@ -235,6 +153,26 @@ const Todo = () => {
     );
   }
 
+  const incompleteItem = IncompleteTodos({
+    todos: incompleteTodos,
+    isLoading,
+    onToggleComplete: handleToggleComplete,
+    onDelete: handleDelete,
+    updateLoading: updateMutation.isPending
+  });
+
+  const completedItem = CompletedTodos({
+    todos: completedTodos,
+    onToggleComplete: handleToggleComplete,
+    onDelete: handleDelete,
+    updateLoading: updateMutation.isPending
+  });
+
+  const collapseItems = [incompleteItem];
+  if (completedItem) {
+    collapseItems.push(completedItem);
+  }
+
   return (
     <Row gutter={[16, 16]} style={{ padding: '20px' }}>
       <Col span={24}>
@@ -294,215 +232,25 @@ const Todo = () => {
         </Card>
       </Col>
 
-      <Col span={24}>
-        {/* 할일 추가 */}
-        <Card style={cuteStyles.addCard}>
-          <Form form={addForm} onFinish={handleAddTodo}>
-            <Form.Item name="title" rules={[{ required: true, message: '할일을 입력해주세요 🌟' }]}>
-              <Input.Search
-                placeholder="✨ 새로운 할일을 입력하세요..."
-                enterButton={
-                  <Button type="primary" icon={<RocketFilled />} style={{ 
-                    background: 'linear-gradient(90deg, #a8e063 0%, #56ab2f 100%)',
-                    border: 'none',
-                    borderRadius: '10px'
-                  }}>
-                    추가하기
-                  </Button>
-                }
-                size="large"
-                style={{ borderRadius: '15px' }}
-                onSearch={(value) => handleAddTodo({ title: value })}
-                loading={createMutation.isPending}
-              />
-            </Form.Item>
-          </Form>
-        </Card>
-      </Col>
+      {/* 할일 추가 */}
+      <TodoInput 
+        form={addForm} 
+        onAddTodo={handleAddTodo} 
+        loading={createMutation.isPending} 
+      />
 
       <Col span={24}>
-        {/* 할일 목록 - Collapsible */}
+        {/* 할일 목록 */}
         <Collapse
-        defaultActiveKey={['incomplete']}
-        style={{ 
-          borderRadius: '20px',
-          overflow: 'hidden',
-          border: 'none',
-          background: 'white'
-        }}
-        expandIconPosition="end"
-        items={[
-          {
-            key: 'incomplete',
-            label: (
-              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                <ClockCircleOutlined style={{ marginRight: '8px', color: '#ff6b6b' }} />
-                진행중인 할일
-                <Badge count={incompleteTodos.length} style={{ marginLeft: '10px', backgroundColor: '#ff6b6b' }} />
-              </span>
-            ),
-            children: (
-              <>
-                {isLoading ? (
-                  <Row justify="center" style={{ padding: '50px 0' }}>
-                    <Col>
-                      <Spin size="large" tip="로딩중... 🎯" />
-                    </Col>
-                  </Row>
-                ) : incompleteTodos.length === 0 ? (
-                  <Empty 
-                    description={
-                      <span style={{ fontSize: '16px', color: '#a0a0a0' }}>
-                        <SmileOutlined style={{ fontSize: '24px', marginBottom: '10px' }} />
-                        <br />
-                        모든 할일을 완료했어요! 🎉
-                      </span>
-                    }
-                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                  />
-                ) : (
-                  <Row>
-                    <Col span={24} style={{ maxHeight: '400px', overflowY: 'auto', padding: '10px' }}>
-                    <List
-                      dataSource={incompleteTodos}
-                      renderItem={(todo) => (
-                        <List.Item
-                          style={{
-                            ...cuteStyles.listItem,
-                            ':hover': cuteStyles.listItemHover
-                          }}
-                          actions={[
-                            <Dropdown
-                              menu={{
-                                items: [
-                                  {
-                                    key: 'delete',
-                                    label: '삭제',
-                                    danger: true,
-                                    icon: <DeleteOutlined />,
-                                    onClick: () => handleDelete(todo.id),
-                                  },
-                                ],
-                              }}
-                              trigger={['click']}
-                            >
-                              <Button 
-                                type="text" 
-                                icon={<MoreOutlined />} 
-                                style={{ borderRadius: '10px' }}
-                              />
-                            </Dropdown>,
-                          ]}
-                        >
-                          <List.Item.Meta
-                            avatar={
-                              <Checkbox
-                                checked={todo.completed}
-                                onChange={() => handleToggleComplete(todo)}
-                                disabled={updateMutation.isPending}
-                                style={cuteStyles.checkbox}
-                              />
-                            }
-                            title={
-                              <span style={{ fontSize: '16px' }}>
-                                <span style={cuteStyles.emoji}>{getRandomEmoji()}</span>
-                                {todo.title}
-                              </span>
-                            }
-                            description={
-                              <Tag color={getPriorityColor(todo.id)} style={cuteStyles.tag}>
-                                #{todo.id}
-                              </Tag>
-                            }
-                          />
-                        </List.Item>
-                      )}
-                    />
-                    </Col>
-                  </Row>
-                )}
-              </>
-            ),
-          },
-          ...(completedTodos.length > 0 ? [{
-            key: 'completed',
-            label: (
-              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                <CheckCircleOutlined style={{ marginRight: '8px', color: '#52c41a' }} />
-                완료된 할일
-                <Badge count={completedTodos.length} style={{ marginLeft: '10px', backgroundColor: '#52c41a' }} />
-              </span>
-            ),
-            children: (
-              <Row>
-                <Col span={24} style={{ maxHeight: '400px', overflowY: 'auto', padding: '10px' }}>
-                <List
-                  dataSource={completedTodos}
-                  renderItem={(todo) => (
-                    <List.Item
-                      style={{
-                        ...cuteStyles.listItem,
-                        opacity: 0.8,
-                        ':hover': cuteStyles.listItemHover
-                      }}
-                      actions={[
-                        <Dropdown
-                          menu={{
-                            items: [
-                              {
-                                key: 'delete',
-                                label: '삭제',
-                                danger: true,
-                                icon: <DeleteOutlined />,
-                                onClick: () => handleDelete(todo.id),
-                              },
-                            ],
-                          }}
-                          trigger={['click']}
-                        >
-                          <Button 
-                            type="text" 
-                            icon={<MoreOutlined />}
-                            style={{ borderRadius: '10px' }}
-                          />
-                        </Dropdown>,
-                      ]}
-                    >
-                      <List.Item.Meta
-                        avatar={
-                          <Checkbox
-                            checked={todo.completed}
-                            onChange={() => handleToggleComplete(todo)}
-                            disabled={updateMutation.isPending}
-                            style={cuteStyles.checkbox}
-                          />
-                        }
-                        title={
-                          <Typography.Text
-                            style={cuteStyles.completedText}
-                          >
-                            {todo.title}
-                          </Typography.Text>
-                        }
-                        description={
-                          <span>
-                            <Tag color="green" style={cuteStyles.tag}>
-                              <CheckCircleOutlined /> 완료
-                            </Tag>
-                            <Tag color={getPriorityColor(todo.id)} style={cuteStyles.tag}>
-                              #{todo.id}
-                            </Tag>
-                          </span>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-                </Col>
-              </Row>
-            ),
-          }] : []),
-        ]}
+          defaultActiveKey={['incomplete']}
+          style={{ 
+            borderRadius: '20px',
+            overflow: 'hidden',
+            border: 'none',
+            background: 'white'
+          }}
+          expandIconPosition="end"
+          items={collapseItems}
         />
       </Col>
     </Row>
